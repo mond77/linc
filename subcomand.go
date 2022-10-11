@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"linc/container"
 	"linc/Cgroups/subsystems"
+	"linc/container"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -31,7 +31,7 @@ var runCommand = cli.Command{
 			Usage: "cpuset limit",
 		},
 		cli.StringFlag{
-			Name: "v",
+			Name:  "v",
 			Usage: "volume",
 		},
 	},
@@ -50,7 +50,7 @@ var runCommand = cli.Command{
 			CpuSet:      context.String("cpuset"),
 			CpuShare:    context.String("cpushare"),
 		}
-		Run(tty, cmdArray, resConf,volume)
+		Run(tty, cmdArray, resConf, volume)
 		return nil
 	},
 }
@@ -65,3 +65,15 @@ var initCommand = cli.Command{
 	},
 }
 
+var commitComand = cli.Command{
+	Name:  "commit",
+	Usage: "comit a container into a image",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("missing container name")
+		}
+		imageName := context.Args().Get(0)
+		commitContainer(imageName)
+		return nil
+	},
+}
