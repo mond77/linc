@@ -28,6 +28,8 @@ func NewParentProcess(tty bool) (*exec.Cmd,*os.File) {
 	}
 	//传入管道文件读取端的句柄；一个进程默认会有三个文件描述符，分别是Stdin、Stdout、Stderr，所以rp会成为第四个
 	cmd.ExtraFiles = []*os.File{rp}
+	//
+	cmd.Dir = "/root/busybox"
 	return cmd,wp
 }
 
