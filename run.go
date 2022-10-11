@@ -28,7 +28,12 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
 
 	sendInitCommand(comArray, writePipe)
 	parent.Wait()
-	os.Exit(0)
+
+	mntURL := "/root/mnt/"
+	rootURL := "/root/"
+	//init进程结束后
+	container.DeleteWorkSpace(rootURL, mntURL)
+	//os.Exit(0)不该存在，否则cgroupManager.Destroy()不会执行
 }
 
 func sendInitCommand(comArray []string, writePipe *os.File) {
