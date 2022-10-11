@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func NewParentProcess(tty bool) (*exec.Cmd,*os.File) {
+func NewParentProcess(tty bool,volume string) (*exec.Cmd,*os.File) {
 	rp,wp,err := NewPipe()
 	if err!=nil{
 		log.Errorf("NewPipe error %v",err)
@@ -32,7 +32,7 @@ func NewParentProcess(tty bool) (*exec.Cmd,*os.File) {
 	mntURL := "/root/mnt/"
 	rootURL := "/root/"
 	//init进程执行前
-	NewWorkSpace(rootURL, mntURL)
+	NewWorkSpace(rootURL, mntURL,volume)
 	cmd.Dir = mntURL
 
 	return cmd,wp

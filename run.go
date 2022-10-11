@@ -11,8 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
-	parent, writePipe := container.NewParentProcess(tty)
+func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume string) {
+	parent, writePipe := container.NewParentProcess(tty,volume)
 	if parent == nil {
 		log.Errorf("New parent process error")
 		return
@@ -32,7 +32,7 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
 	mntURL := "/root/mnt/"
 	rootURL := "/root/"
 	//init进程结束后
-	container.DeleteWorkSpace(rootURL, mntURL)
+	container.DeleteWorkSpace(rootURL, mntURL,volume)
 	//os.Exit(0)不该存在，否则cgroupManager.Destroy()不会执行
 }
 

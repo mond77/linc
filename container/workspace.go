@@ -3,15 +3,33 @@ package container
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
 //Create a AUFS filesystem as container root workspace
-func NewWorkSpace(rootURL string, mntURL string) {
+func NewWorkSpace(rootURL string, mntURL string, volume string) {
 	CreateReadOnlyLayer(rootURL)
 	CreateWriteLayer(rootURL)
 	CreateMountPoint(rootURL, mntURL)
+
+	if volume != "" {
+		volumeURLs := volumeUrlExtract(volume)
+		length := len(volumeURLs)
+		if length == 2 && volumeURLs[0] != "" && volumeURLs[1] != "" {
+			MountVolume(rootURL, mntURL, volumeURLs)
+			log.Infof("%q", volumeURLs)
+		} else {
+			log.Infof("Volume parameter input is not correct.")
+		}
+	}
+}
+
+func volumeUrlExtract(volume string) []string {
+	var volumeURLs []string
+	volumeURLs = strings.Split(volume, ":")
+	return volumeURLs
 }
 
 func CreateReadOnlyLayer(rootURL string) {
@@ -52,8 +70,18 @@ func CreateMountPoint(rootURL string, mntURL string) {
 }
 
 //Delete the AUFS filesystem while container exit
-func DeleteWorkSpace(rootURL string, mntURL string) {
-	DeleteMountPoint(rootURL, mntURL)
+func DeleteWorkSpace(rootURL string, mntURL string, volume string) {
+	if volume != "" {
+		volumeURLs := volumeUrlExtract(volume)
+		length := len(volumeURLs)
+		if length == 2 && volumeURLs[0] != "" && volumeURLs[1] != "" {
+			DeleteMountPointWithVolume(rootURL, mntURL, volumeURLs)
+		} else {
+			DeleteMountPoint(rootURL, mntURL)
+		}
+	} else {
+		DeleteMountPoint(rootURL, mntURL)
+	}
 	DeleteWriteLayer(rootURL)
 }
 
