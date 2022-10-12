@@ -10,7 +10,7 @@ import (
 	
 )
 var(
-	DefaultInfoLocation string = "/var/run/mydocker/%s/"
+	DefaultInfoLocation string = "/var/run/linc/%s/"
 	ConfigName          string = "config.json"
 	ContainerLogFile	string = "container.log"
 )

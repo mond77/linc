@@ -16,7 +16,7 @@ var (
 	RUNNING             string = "running"
 	STOP                string = "stopped"
 	Exit                string = "exited"
-	DefaultInfoLocation string = "/var/run/mydocker/%s/"
+	DefaultInfoLocation string = "/var/run/linc/%s/"
 	ConfigName          string = "config.json"
 )
 

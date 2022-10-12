@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"linc/Cgroups/subsystems"
 	"linc/container"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -19,7 +20,7 @@ var runCommand = cli.Command{
 			Usage: "enable tty",
 		},
 		cli.BoolFlag{
-			Name: "d",
+			Name:  "d",
 			Usage: "detach container",
 		},
 		cli.StringFlag{
@@ -55,7 +56,7 @@ var runCommand = cli.Command{
 		detach := context.Bool("d")
 
 		//tty和detach不能共存
-		if tty && detach{
+		if tty && detach {
 			return fmt.Errorf("it and d parameter can not both provided")
 		}
 
@@ -66,7 +67,7 @@ var runCommand = cli.Command{
 			CpuShare:    context.String("cpushare"),
 		}
 		containerName := context.String("name")
-		Run(tty, cmdArray, resConf, volume,containerName)
+		Run(tty, cmdArray, resConf, volume, containerName)
 		return nil
 	},
 }
@@ -104,7 +105,7 @@ var listCommand = cli.Command{
 }
 
 var logCommand = cli.Command{
-	Name: "logs",
+	Name:  "logs",
 	Usage: "print logs of a container",
 	Action: func(context *cli.Context) error {
 		if len(context.Args()) < 1 {
@@ -112,6 +113,29 @@ var logCommand = cli.Command{
 		}
 		containerName := context.Args().Get(0)
 		logContainer(containerName)
+		return nil
+	},
+}
+
+var execCommand = cli.Command{
+	Name:  "exec",
+	Usage: "exec a command into container",
+	Action: func(context *cli.Context) error {
+		//This is for callback
+		if os.Getenv(ENV_EXEC_PID) != "" {
+			log.Infof("pid callback pid %s", os.Getgid())
+			return nil
+		}
+
+		if len(context.Args()) < 2 {
+			return fmt.Errorf("Missing container name or command")
+		}
+		containerName := context.Args().Get(0)
+		var commandArray []string
+		for _, arg := range context.Args().Tail() {
+			commandArray = append(commandArray, arg)
+		}
+		ExecContainer(containerName, commandArray)
 		return nil
 	},
 }
