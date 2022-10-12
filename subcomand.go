@@ -18,6 +18,10 @@ var runCommand = cli.Command{
 			Name:  "it",
 			Usage: "enable tty",
 		},
+		cli.BoolFlag{
+			Name: "d",
+			Usage: "detach container",
+		},
 		cli.StringFlag{
 			Name:  "m",
 			Usage: "memory limit",
@@ -44,6 +48,13 @@ var runCommand = cli.Command{
 			cmdArray = append(cmdArray, arg)
 		}
 		tty := context.Bool("it")
+		detach := context.Bool("d")
+
+		//tty和detach不能共存
+		if tty && detach{
+			return fmt.Errorf("it and d parameter can not both provided")
+		}
+
 		volume := context.String("v")
 		resConf := &subsystems.ResourceConfig{
 			MemoryLimit: context.String("m"),

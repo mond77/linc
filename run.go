@@ -27,8 +27,11 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume stri
 	cgroupManager.Apply(parent.Process.Pid)
 
 	sendInitCommand(comArray, writePipe)
-	parent.Wait()
-
+	//交互式创建容器，父进程等待子进程结束；默认不等待，由ID为1的init进程接管容器进程
+	if tty {
+		parent.Wait()
+	}
+	
 	mntURL := "/root/mnt/"
 	rootURL := "/root/"
 	//init进程结束后
