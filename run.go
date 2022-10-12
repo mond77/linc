@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume string) {
+func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume,containerName string) {
 	parent, writePipe := container.NewParentProcess(tty,volume)
 	if parent == nil {
 		log.Errorf("New parent process error")
@@ -20,6 +20,14 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume stri
 	if err := parent.Start(); err != nil {
 		log.Error(err)
 	}
+
+	//record container info
+	containerName, err := recordContainerInfo(parent.Process.Pid, comArray, containerName)
+	if err != nil {
+		log.Errorf("Record container info error %v", err)
+		return
+	}
+
 	// use mydocker-cgroup as cgroup name
 	cgroupManager := cgroups.NewCgroupManager("linc-cgroup")
 	defer cgroupManager.Destroy()
@@ -30,6 +38,7 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig,volume stri
 	//交互式创建容器，父进程等待子进程结束；默认不等待，由ID为1的init进程接管容器进程
 	if tty {
 		parent.Wait()
+		deleteContainerInfo(containerName)
 	}
 	
 	mntURL := "/root/mnt/"
@@ -45,3 +54,4 @@ func sendInitCommand(comArray []string, writePipe *os.File) {
 	writePipe.WriteString(command)
 	writePipe.Close()
 }
+
