@@ -8,15 +8,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"linc/network"
 )
 
 var runCommand = cli.Command{
-	Name: "run",
-	Usage: `Create a container with namespace and cgroups limit
-			linc run -it [command]`,
+	Name:  "run",
+	Usage: `Create a container with namespace and cgroups limit ie: mydocker run -ti [image] [command]`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
-			Name:  "it",
+			Name:  "ti",
 			Usage: "enable tty",
 		},
 		cli.BoolFlag{
@@ -28,7 +28,7 @@ var runCommand = cli.Command{
 			Usage: "memory limit",
 		},
 		cli.StringFlag{
-			Name:  "cpushare,c",
+			Name:  "cpushare",
 			Usage: "cpushare limit",
 		},
 		cli.StringFlag{
@@ -36,38 +36,59 @@ var runCommand = cli.Command{
 			Usage: "cpuset limit",
 		},
 		cli.StringFlag{
+			Name:  "name",
+			Usage: "container name",
+		},
+		cli.StringFlag{
 			Name:  "v",
 			Usage: "volume",
 		},
+		cli.StringSliceFlag{
+			Name:  "e",
+			Usage: "set environment",
+		},
 		cli.StringFlag{
-			Name:  "name",
-			Usage: "container name",
+			Name:  "net",
+			Usage: "container network",
+		},
+		cli.StringSliceFlag{
+			Name: "p",
+			Usage: "port mapping",
 		},
 	},
 	Action: func(context *cli.Context) error {
 		if len(context.Args()) < 1 {
-			return fmt.Errorf("missing container command")
+			return fmt.Errorf("Missing container command")
 		}
 		var cmdArray []string
 		for _, arg := range context.Args() {
 			cmdArray = append(cmdArray, arg)
 		}
-		tty := context.Bool("it")
+
+		//get image name
+		imageName := cmdArray[0]
+		cmdArray = cmdArray[1:]
+
+		createTty := context.Bool("ti")
 		detach := context.Bool("d")
 
-		//tty和detach不能共存
-		if tty && detach {
-			return fmt.Errorf("it and d parameter can not both provided")
+		if createTty && detach {
+			return fmt.Errorf("ti and d paramter can not both provided")
 		}
-
-		volume := context.String("v")
 		resConf := &subsystems.ResourceConfig{
 			MemoryLimit: context.String("m"),
 			CpuSet:      context.String("cpuset"),
 			CpuShare:    context.String("cpushare"),
 		}
+		log.Infof("createTty %v", createTty)
 		containerName := context.String("name")
-		Run(tty, cmdArray, resConf, volume, containerName)
+		volume := context.String("v")
+		network := context.String("net")
+
+		envSlice := context.StringSlice("e")
+		portmapping := context.StringSlice("p")
+
+		Run(createTty, cmdArray, resConf, containerName, volume, imageName, envSlice, network, portmapping)
 		return nil
 	},
 }
@@ -79,19 +100,6 @@ var initCommand = cli.Command{
 		log.Infof("init come on")
 		err := container.RunInit()
 		return err
-	},
-}
-
-var commitComand = cli.Command{
-	Name:  "commit",
-	Usage: "comit a container into a image",
-	Action: func(context *cli.Context) error {
-		if len(context.Args()) < 1 {
-			return fmt.Errorf("missing container name")
-		}
-		imageName := context.Args().Get(0)
-		commitContainer(imageName)
-		return nil
 	},
 }
 
@@ -137,5 +145,101 @@ var execCommand = cli.Command{
 		}
 		ExecContainer(containerName, commandArray)
 		return nil
+	},
+}
+
+var stopCommand = cli.Command{
+	Name:  "stop",
+	Usage: "stop a container",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("Missing container name")
+		}
+		containerName := context.Args().Get(0)
+		stopContainer(containerName)
+		return nil
+	},
+}
+
+var removeCommand = cli.Command{
+	Name:  "rm",
+	Usage: "remove unused containers",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("Missing container name")
+		}
+		containerName := context.Args().Get(0)
+		removeContainer(containerName)
+		return nil
+	},
+}
+
+var commitCommand = cli.Command{
+	Name:  "commit",
+	Usage: "commit a container into image",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 2 {
+			return fmt.Errorf("Missing container name and image name")
+		}
+		containerName := context.Args().Get(0)
+		imageName := context.Args().Get(1)
+		commitContainer(containerName, imageName)
+		return nil
+	},
+}
+
+var networkCommand = cli.Command{
+	Name:  "network",
+	Usage: "container network commands",
+	Subcommands: []cli.Command {
+		{
+			Name: "create",
+			Usage: "create a container network",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "driver",
+					Usage: "network driver",
+				},
+				cli.StringFlag{
+					Name:  "subnet",
+					Usage: "subnet cidr",
+				},
+			},
+			Action:func(context *cli.Context) error {
+				if len(context.Args()) < 1 {
+					return fmt.Errorf("Missing network name")
+				}
+				network.Init()
+				err := network.CreateNetwork(context.String("driver"), context.String("subnet"), context.Args()[0])
+				if err != nil {
+					return fmt.Errorf("create network error: %+v", err)
+				}
+				return nil
+			},
+		},
+		{
+			Name: "list",
+			Usage: "list container network",
+			Action:func(context *cli.Context) error {
+				network.Init()
+				network.ListNetwork()
+				return nil
+			},
+		},
+		{
+			Name: "remove",
+			Usage: "remove container network",
+			Action:func(context *cli.Context) error {
+				if len(context.Args()) < 1 {
+					return fmt.Errorf("Missing network name")
+				}
+				network.Init()
+				err := network.DeleteNetwork(context.Args()[0])
+				if err != nil {
+					return fmt.Errorf("remove network error: %+v", err)
+				}
+				return nil
+			},
+		},
 	},
 }

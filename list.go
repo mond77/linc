@@ -8,11 +8,11 @@ import (
 	"text/tabwriter"
 
 	log "github.com/sirupsen/logrus"
-	
+	"linc/container"
 )
 
 func ListContainers() {
-	dirURL := fmt.Sprintf(DefaultInfoLocation, "")
+	dirURL := fmt.Sprintf(container.DefaultInfoLocation, "")
 	dirURL = dirURL[:len(dirURL)-1]
 	files, err := ioutil.ReadDir(dirURL)
 	if err != nil {
@@ -20,7 +20,7 @@ func ListContainers() {
 		return
 	}
 
-	var containers []*ContainerInfo
+	var containers []*container.ContainerInfo
 	for _, file := range files {
 		tmpContainer, err := getContainerInfo(file)
 		if err != nil {
@@ -47,16 +47,16 @@ func ListContainers() {
 	}
 }
 
-func getContainerInfo(file os.FileInfo) (*ContainerInfo, error) {
+func getContainerInfo(file os.FileInfo) (*container.ContainerInfo, error) {
 	containerName := file.Name()
-	configFileDir := fmt.Sprintf(DefaultInfoLocation, containerName)
-	configFileDir = configFileDir + ConfigName
+	configFileDir := fmt.Sprintf(container.DefaultInfoLocation, containerName)
+	configFileDir = configFileDir + container.ConfigName
 	content, err := ioutil.ReadFile(configFileDir)
 	if err != nil {
 		log.Errorf("Read file %s error %v", configFileDir, err)
 		return nil, err
 	}
-	var containerInfo ContainerInfo
+	var containerInfo container.ContainerInfo
 	if err := json.Unmarshal(content, &containerInfo); err != nil {
 		log.Errorf("Json unmarshal error %v", err)
 		return nil, err

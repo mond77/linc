@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"os"
 )
 
 const usage = `linc a simple docker runtime implementation for learning purpose.`
@@ -16,10 +17,13 @@ func main() {
 	app.Commands = []cli.Command{
 		initCommand,
 		runCommand,
-		commitComand,
 		listCommand,
 		logCommand,
 		execCommand,
+		stopCommand,
+		removeCommand,
+		commitCommand,
+		networkCommand,
 	}
 
 	app.Before = func(context *cli.Context) error {
